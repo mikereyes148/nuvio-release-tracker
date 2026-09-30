@@ -34,20 +34,32 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/manifest.json", (_req, res) => {
+  const catalogs = [
+    { type: "movie", id: "latest_movies", name: "Latest Movies", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "movie", id: "now_playing", name: "Now Playing", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "movie", id: "upcoming", name: "Upcoming Movies", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "movie", id: "popular", name: "Popular Movies", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "movie", id: "top_rated", name: "Top Rated Movies", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "series", id: "latest_series", name: "Latest Series", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "series", id: "airing_today", name: "Airing Today", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "series", id: "on_the_air", name: "On The Air", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "series", id: "popular_tv", name: "Popular Series", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] },
+    { type: "series", id: "top_rated_tv", name: "Top Rated Series", extra: [{ name: "skip", isRequired: false }], extraSupported: ["skip"] }
+  ];
+
   res.json({
-    id: "com.nuvio.tmdb.catalog",
-    version: "4.0.0",
+    id: "com.nuvio.tmdb.catalog.v5",
+    version: "5.0.0",
     name: "Nuvio TMDB Catalogue",
-    description: "TMDB-powered movie and series catalogue with automatic metadata refresh.",
+    description: "TMDB-powered metadata catalogue for Nuvio.",
     logo: "https://www.themoviedb.org/assets/2/v4/logos/longer-v4.svg",
-    resources: ["catalog", "meta"],
+    resources: [
+      { name: "catalog", types: ["movie", "series"] },
+      { name: "meta", types: ["movie", "series"], idPrefixes: ["tmdb:"] }
+    ],
     types: ["movie", "series"],
-    catalogs: catalogs.map(([type, id, name]) => ({
-      type: type === "tv" ? "series" : "movie",
-      id,
-      name,
-      extra: [{ name: "skip", isRequired: false }]
-    }))
+    catalogs,
+    behaviorHints: { configurable: false }
   });
 });
 

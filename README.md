@@ -1,8 +1,8 @@
-# Nuvio TMDB Catalogue v4
+# Nuvio TMDB Catalogue v5
 
-A metadata-only Nuvio/Stremio-compatible catalogue powered by TMDB.
+TMDB-powered metadata-only catalogue for Nuvio/Stremio.
 
-## Categories
+Catalogs:
 - Latest Movies
 - Now Playing
 - Upcoming Movies
@@ -14,21 +14,14 @@ A metadata-only Nuvio/Stremio-compatible catalogue powered by TMDB.
 - Popular Series
 - Top Rated Series
 
-## Render setup
-Build Command:
-`npm install`
-
-Start Command:
-`npm start`
-
-Environment variable:
-`TMDB_API_KEY=YOUR_TMDB_KEY`
-
-Do not commit your TMDB API key to GitHub. Put it in Render → Environment.
+Render:
+Build Command: `npm install`
+Start Command: `npm start`
+Environment variable: `TMDB_API_KEY=YOUR_NEW_KEY`
 
 Manifest:
-`https://YOUR-SERVICE.onrender.com/manifest.json`
+`https://YOUR-RENDER-SERVICE.onrender.com/manifest.json`
 
-This project provides catalogue/metadata only. It does not provide movie/episode download or streaming URLs.
+After deploying v5, remove the old addon from Nuvio and install the manifest again so Nuvio fetches the new manifest.
 
-The VegaMovies-inspired repository is a frontend using TMDB data; this addon uses TMDB directly for the catalogue. It therefore does not detect uploads on third-party movie-download sites.
+This addon provides catalogue/metadata only and does not provide download or streaming URLs.
