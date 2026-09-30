@@ -1,27 +1,29 @@
-# Nuvio TMDB Catalogue v5
+# Nuvio TMDB Catalogue v6
 
-TMDB-powered metadata-only catalogue for Nuvio/Stremio.
+TMDB-only metadata catalogue arranged in a VegaMovies-style browsing layout.
 
-Catalogs:
-- Latest Movies
-- Now Playing
-- Upcoming Movies
-- Popular Movies
-- Top Rated Movies
+## Important behavior
+This does NOT read or scrape VegaMovies. It uses TMDB release/air-date data to reproduce a similar catalogue organization.
+
+## Main rows
+- Recent Movies — last 60 days, newest release first
+- Latest Movies — same recent-release window
+- Upcoming Movies — today through next 180 days, earliest release first
+- Recent Series — last 60 days, newest first
 - Latest Series
-- Airing Today
-- On The Air
-- Popular Series
-- Top Rated Series
+- Upcoming Series
+- Trending / Popular / Top Rated
+- Indian Movies / Indian Series
 
-Render:
-Build Command: `npm install`
-Start Command: `npm start`
-Environment variable: `TMDB_API_KEY=YOUR_NEW_KEY`
+## Render
+Build: npm install
+Start: npm start
+Environment variable:
+TMDB_API_KEY=YOUR_NEW_TMDB_KEY
 
 Manifest:
-`https://YOUR-RENDER-SERVICE.onrender.com/manifest.json`
+https://YOUR-RENDER-SERVICE.onrender.com/manifest.json
 
-After deploying v5, remove the old addon from Nuvio and install the manifest again so Nuvio fetches the new manifest.
+After deploying, remove the old addon from Nuvio and reinstall it so the v6 manifest is fetched.
 
-This addon provides catalogue/metadata only and does not provide download or streaming URLs.
+No streaming/download URLs are provided.
