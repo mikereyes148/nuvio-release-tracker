@@ -1,19 +1,21 @@
-# Nuvio TMDB New & Coming Soon v1
+# Nuvio Watchmode + TMDB v1
 
-Minimal test addon.
+Uses:
+- Watchmode: OTT release/update feed
+- TMDB: posters, backdrop, overview, rating and metadata
 
-Catalogs:
-- 🆕 New & Recent — TMDB India-region movie releases from the last 45 days, newest release first.
-- ⏳ Coming Soon — TMDB India-region movie releases from today through the next 180 days, earliest release first.
+Catalogues:
+- 🆕 New on OTT
+- 🆕 New Series on OTT
 
-Render:
+Render environment variables:
+WATCHMODE_API_KEY=YOUR_WATCHMODE_KEY
+TMDB_API_KEY=YOUR_TMDB_KEY
+
 Build: npm install
 Start: npm start
-Environment: TMDB_API_KEY=<your new key>
 
-Manifest:
-https://nuvio-release-tracker.onrender.com/manifest.json
+Important:
+The Watchmode `/releases` endpoint is primarily based on US streaming releases. Exact India-specific OTT release tracking depends on Watchmode's enabled regions/plan. The paid `title-release-dates` endpoint supports regional streaming release rows.
 
-After deployment, remove the old addon from Nuvio and reinstall this manifest.
-
-This is metadata/catalogue only; it does not provide streaming or download URLs.
+No download or streaming URLs are exposed by this addon.
