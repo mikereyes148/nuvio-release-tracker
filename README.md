@@ -1,36 +1,34 @@
-# Nuvio Release Tracker v2
+# Nuvio TMDB Catalogue v4
 
-This version adds:
+A metadata-only Nuvio/Stremio-compatible catalogue powered by TMDB.
 
-- Latest Releases
-- HD Added
-- Hindi Dub Added
-- 4K Added
-- Episodes Added
-- Automatic duplicate detection
-- Persistent `releases.json` history
-- First-seen date for each title
-- Basic movie/series classification
-- Search support
-- Cached history when the source is temporarily unavailable
+## Categories
+- Latest Movies
+- Now Playing
+- Upcoming Movies
+- Popular Movies
+- Top Rated Movies
+- Latest Series
+- Airing Today
+- On The Air
+- Popular Series
+- Top Rated Series
 
-## Setup
+## Render setup
+Build Command:
+`npm install`
 
-```bash
-npm install
-SOURCE_URL="https://YOUR-AUTHORIZED-SOURCE.example/releases" npm start
-```
+Start Command:
+`npm start`
 
-Then use:
+Environment variable:
+`TMDB_API_KEY=YOUR_TMDB_KEY`
 
-```text
-https://YOUR-HOST/manifest.json
-```
+Do not commit your TMDB API key to GitHub. Put it in Render → Environment.
 
-in a Nuvio/Stremio-compatible addon installer.
+Manifest:
+`https://YOUR-SERVICE.onrender.com/manifest.json`
 
-## Important
+This project provides catalogue/metadata only. It does not provide movie/episode download or streaming URLs.
 
-Configure `SOURCE_URL` only for a site/feed you are authorized to access and monitor. This project is a metadata/release tracker; it does not provide download, torrent, file-hosting, or playback URLs.
-
-The HTML parser is intentionally generic. If your authorized source has a known HTML/API format, the selectors in `scrape()` can be adapted to that format.
+The VegaMovies-inspired repository is a frontend using TMDB data; this addon uses TMDB directly for the catalogue. It therefore does not detect uploads on third-party movie-download sites.

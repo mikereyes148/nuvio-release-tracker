@@ -1,145 +1,150 @@
-const express = require("express");
-const axios = require("axios");
-const cheerio = require("cheerio");
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
+import express from "express";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
-// Use a source you are authorized to monitor, or a lawful/public release feed.
-const SOURCE_URL = process.env.SOURCE_URL || "https://example.com/releases";
-const DB_FILE = path.join(__dirname, "releases.json");
-
-const manifest = {
-  id: "com.shelbyverse.release-tracker",
-  version: "2.0.0",
-  name: "Release Tracker",
-  description: "Automatic release tracker with quality/language categories and duplicate detection.",
-  resources: ["catalog", "meta"],
-  types: ["movie", "series"],
-  catalogs: [
-    { type: "movie", id: "latest", name: "Latest Releases", extra: [{name:"search",isRequired:false}] },
-    { type: "movie", id: "hd-added", name: "HD Added", extra: [{name:"search",isRequired:false}] },
-    { type: "movie", id: "hindi-dub-added", name: "Hindi Dub Added", extra: [{name:"search",isRequired:false}] },
-    { type: "movie", id: "4k-added", name: "4K Added", extra: [{name:"search",isRequired:false}] },
-    { type: "series", id: "latest", name: "Latest Series", extra: [{name:"search",isRequired:false}] },
-    { type: "series", id: "episodes-added", name: "Episodes Added", extra: [{name:"search",isRequired:false}] }
-  ]
-};
-
-function loadDB() {
-  try { return JSON.parse(fs.readFileSync(DB_FILE, "utf8")); }
-  catch { return []; }
-}
-function saveDB(items) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(items.slice(0, 1000), null, 2));
-}
-function idFor(title) {
-  return "rt:" + crypto.createHash("sha1").update(title.toLowerCase()).digest("hex").slice(0, 16);
-}
-function classify(text) {
-  const t = text.toLowerCase();
-  return {
-    is4k: /(4k|2160p|uhd)/i.test(t),
-    isHD: /(1080p|720p|web-dl|webrip|bluray|hd)/i.test(t),
-    isHindiDub: /(hindi|hin[-\s]?dub|dual audio|multi audio)/i.test(t),
-    isEpisode: /(episode|ep[-\s]?\d+|s\d{1,2}e\d{1,2})/i.test(t),
-    isSeries: /(season\s*\d+|episode|series|web[-\s]?series)/i.test(t)
-  };
-}
-function cleanTitle(s) {
-  return s.replace(/\s+/g, " ").trim();
+if (!TMDB_API_KEY) {
+  console.warn("TMDB_API_KEY is not set. Add it in Render → Environment.");
 }
 
-async function scrape() {
-  const {data: html} = await axios.get(SOURCE_URL, {
-    timeout: 15000,
-    headers: {"User-Agent": "ReleaseTracker/2.0"}
-  });
-  const $ = cheerio.load(html);
-  const old = loadDB();
-  const byId = new Map(old.map(x => [x.id, x]));
+const TMDB = "https://api.themoviedb.org/3";
+const IMG = "https://image.tmdb.org/t/p/w500";
 
-  $("a").each((_, el) => {
-    const a = $(el);
-    const img = a.find("img").first();
-    const raw = cleanTitle(a.text() || img.attr("alt") || "");
-    if (!raw || raw.length < 3) return;
+const catalogs = [
+  ["movie", "latest_movies", "Latest Movies"],
+  ["movie", "now_playing", "Now Playing"],
+  ["movie", "upcoming", "Upcoming Movies"],
+  ["movie", "popular", "Popular Movies"],
+  ["movie", "top_rated", "Top Rated Movies"],
+  ["tv", "latest_series", "Latest Series"],
+  ["tv", "airing_today", "Airing Today"],
+  ["tv", "on_the_air", "On The Air"],
+  ["tv", "popular_tv", "Popular Series"],
+  ["tv", "top_rated_tv", "Top Rated Series"]
+];
 
-    const c = classify(raw);
-    if (!(c.isHD || c.is4k || c.isHindiDub || c.isEpisode)) return;
-
-    const id = idFor(raw);
-    const type = c.isSeries ? "series" : "movie";
-    const poster = img.attr("src") || img.attr("data-src") || "";
-    const item = {
-      id, type, name: raw,
-      poster: poster.startsWith("//") ? "https:" + poster : poster,
-      addedAt: byId.get(id)?.addedAt || new Date().toISOString(),
-      flags: c
-    };
-    byId.set(id, item);
-  });
-
-  const result = [...byId.values()]
-    .sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt))
-    .slice(0, 1000);
-
-  saveDB(result);
-  return result;
-}
-
-async function items() {
-  try { return await scrape(); }
-  catch (e) {
-    console.error("Source refresh failed:", e.message);
-    return loadDB();
-  }
-}
-
-function catalogFilter(all, id) {
-  switch (id) {
-    case "hd-added": return all.filter(x => x.flags.isHD || x.flags.is4k);
-    case "hindi-dub-added": return all.filter(x => x.flags.isHindiDub);
-    case "4k-added": return all.filter(x => x.flags.is4k);
-    case "episodes-added": return all.filter(x => x.flags.isEpisode);
-    case "latest-series": return all.filter(x => x.type === "series");
-    case "latest":
-    default: return all;
-  }
-}
-
-app.get("/manifest.json", (_, res) => res.json(manifest));
-
-app.get("/catalog/:type/:id.json", async (req, res) => {
-  const all = await items();
-  let list = catalogFilter(all, req.params.id)
-    .filter(x => x.type === req.params.type);
-
-  const q = String(req.query.search || "").toLowerCase().trim();
-  if (q) list = list.filter(x => x.name.toLowerCase().includes(q));
-
+app.get("/", (_req, res) => {
   res.json({
-    metas: list.map(x => ({
-      id:x.id, type:x.type, name:x.name, poster:x.poster,
-      description:`${x.flags.is4k ? "4K • " : ""}${x.flags.isHD ? "HD • " : ""}${x.flags.isHindiDub ? "Hindi/Dual Audio • " : ""}${x.flags.isEpisode ? "Episode" : "New Release"}`,
-      releaseInfo:new Date(x.addedAt).toLocaleDateString()
+    name: "Nuvio TMDB Catalogue",
+    status: "ok",
+    message: "Metadata-only movie and series catalogue.",
+    manifest: "/manifest.json"
+  });
+});
+
+app.get("/manifest.json", (_req, res) => {
+  res.json({
+    id: "com.nuvio.tmdb.catalog",
+    version: "4.0.0",
+    name: "Nuvio TMDB Catalogue",
+    description: "TMDB-powered movie and series catalogue with automatic metadata refresh.",
+    logo: "https://www.themoviedb.org/assets/2/v4/logos/longer-v4.svg",
+    resources: ["catalog", "meta"],
+    types: ["movie", "series"],
+    catalogs: catalogs.map(([type, id, name]) => ({
+      type: type === "tv" ? "series" : "movie",
+      id,
+      name,
+      extra: [{ name: "skip", isRequired: false }]
     }))
   });
 });
 
-app.get("/meta/:type/:id.json", async (req,res) => {
-  const all = await items();
-  const x = all.find(i => i.id === req.params.id);
-  if (!x) return res.json({meta:null});
-  res.json({meta:{
-    id:x.id,type:x.type,name:x.name,poster:x.poster,
-    description:`Quality: ${x.flags.is4k ? "4K" : x.flags.isHD ? "HD" : "Standard"} | ${x.flags.isHindiDub ? "Hindi/Dual Audio detected" : "Language not detected"}`,
-    releaseInfo:new Date(x.addedAt).toLocaleDateString()
-  }});
+async function tmdb(path, params = {}) {
+  if (!TMDB_API_KEY) throw new Error("TMDB_API_KEY is missing");
+  const url = new URL(TMDB + path);
+  url.searchParams.set("api_key", TMDB_API_KEY);
+  url.searchParams.set("language", "en-US");
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
+  }
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`TMDB ${r.status}`);
+  return r.json();
+}
+
+function movieMeta(x) {
+  return {
+    id: `tmdb:${x.id}`,
+    type: "movie",
+    name: x.title || x.original_title || "Untitled",
+    poster: x.poster_path ? IMG + x.poster_path : undefined,
+    background: x.backdrop_path ? `https://image.tmdb.org/t/p/w1280${x.backdrop_path}` : undefined,
+    description: x.overview || "",
+    releaseInfo: x.release_date || "",
+    imdbRating: x.vote_average || undefined,
+    genres: Array.isArray(x.genre_ids) ? x.genre_ids.map(String) : undefined
+  };
+}
+
+function seriesMeta(x) {
+  return {
+    id: `tmdb:${x.id}`,
+    type: "series",
+    name: x.name || x.original_name || "Untitled",
+    poster: x.poster_path ? IMG + x.poster_path : undefined,
+    background: x.backdrop_path ? `https://image.tmdb.org/t/p/w1280${x.backdrop_path}` : undefined,
+    description: x.overview || "",
+    releaseInfo: x.first_air_date || "",
+    imdbRating: x.vote_average || undefined,
+    genres: Array.isArray(x.genre_ids) ? x.genre_ids.map(String) : undefined
+  };
+}
+
+async function getCatalog(type, id, skip = 0) {
+  const page = Math.floor(Number(skip || 0) / 20) + 1;
+
+  if (type === "movie") {
+    let path = "/movie/popular";
+    const params = { region: "IN", page };
+    if (id === "latest_movies") path = "/movie/now_playing";
+    else if (id === "now_playing") path = "/movie/now_playing";
+    else if (id === "upcoming") path = "/movie/upcoming";
+    else if (id === "top_rated") path = "/movie/top_rated";
+    const data = await tmdb(path, params);
+    return (data.results || []).map(movieMeta);
+  }
+
+  let path = "/tv/popular";
+  if (id === "airing_today") path = "/tv/airing_today";
+  else if (id === "on_the_air" || id === "latest_series") path = "/tv/on_the_air";
+  else if (id === "top_rated_tv") path = "/tv/top_rated";
+  const data = await tmdb(path, { page });
+  return (data.results || []).map(seriesMeta);
+}
+
+app.get("/catalog/:type/:id.json", async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const items = await getCatalog(type, id, req.query.skip);
+    res.json({ metas: items });
+  } catch (e) {
+    res.status(500).json({ metas: [], error: e.message });
+  }
 });
 
-app.get("/health", (_,res)=>res.json({ok:true, version:"2.0.0"}));
-app.listen(PORT, ()=>console.log(`Release Tracker listening on ${PORT}`));
+app.get("/meta/:type/:id.json", async (req, res) => {
+  try {
+    const rawId = String(req.params.id).replace(/^tmdb:/, "");
+    const type = req.params.type;
+    const data = type === "movie"
+      ? await tmdb(`/movie/${rawId}`, { append_to_response: "credits" })
+      : await tmdb(`/tv/${rawId}`, { append_to_response: "credits" });
+
+    const meta = type === "movie" ? movieMeta(data) : seriesMeta(data);
+    meta.description = data.overview || "";
+    meta.runtime = data.runtime || (data.episode_run_time?.[0]);
+    meta.cast = (data.credits?.cast || []).slice(0, 10).map(c => c.name);
+    meta.director = (data.credits?.crew || [])
+      .filter(c => c.job === "Director")
+      .slice(0, 5)
+      .map(c => c.name);
+
+    res.json({ meta });
+  } catch (e) {
+    res.status(500).json({ meta: null, error: e.message });
+  }
+});
+
+app.listen(PORT, () => console.log(`Nuvio TMDB Catalogue running on port ${PORT}`));
