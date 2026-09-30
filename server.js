@@ -80,25 +80,27 @@ async function enrich(r){
 
 app.get("/",(_,res)=>res.json({
   status:"ok",
-  version:"2.0.0",
+  version:"3.0.0",
   manifest:"/manifest.json",
   diagnostic:"/debug/watchmode"
 }));
 
 app.get("/manifest.json",(_,res)=>res.json({
-  id:"com.nuvio.watchmode.tmdb.v2",
-  version:"2.0.0",
+  id:"com.nuvio.watchmode.tmdb.v3",
+  version:"3.0.0",
   name:"Nuvio OTT Updates",
-  description:"Watchmode releases enriched with TMDB metadata.",
+  description:"OTT release catalogues powered by Watchmode and TMDB.",
   resources:[
     {name:"catalog",types:["movie","series"]},
     {name:"meta",types:["movie","series"],idPrefixes:["tmdb:"]}
   ],
   types:["movie","series"],
+  idPrefixes:["tmdb:"],
   catalogs:[
-    {type:"movie",id:"new_ott_movies",name:"🆕 New on OTT"},
-    {type:"series",id:"new_ott_series",name:"🆕 New Series on OTT"}
-  ]
+    {type:"movie",id:"new_ott_movies",name:"New on OTT"},
+    {type:"series",id:"new_ott_series",name:"New Series on OTT"}
+  ],
+  behaviorHints:{adult:false}
 }));
 
 // Diagnostic: shows whether Watchmode is reachable and what its release objects look like.
