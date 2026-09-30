@@ -1,6 +1,6 @@
 {
-  "name": "nuvio-watchmode-tmdb",
-  "version": "1.0.0",
+  "name": "nuvio-watchmode-tmdb-v2",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {

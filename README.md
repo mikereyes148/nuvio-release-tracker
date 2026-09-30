@@ -1,21 +1,25 @@
-# Nuvio Watchmode + TMDB v1
+# Nuvio Watchmode + TMDB v2
 
-Uses:
-- Watchmode: OTT release/update feed
-- TMDB: posters, backdrop, overview, rating and metadata
+This version adds a diagnostic endpoint and follows the Watchmode documented `/releases` response fields.
 
-Catalogues:
-- 🆕 New on OTT
-- 🆕 New Series on OTT
+Render:
+- Build: `npm install`
+- Start: `npm start`
+- `WATCHMODE_API_KEY=...`
+- `TMDB_API_KEY=...`
 
-Render environment variables:
-WATCHMODE_API_KEY=YOUR_WATCHMODE_KEY
-TMDB_API_KEY=YOUR_TMDB_KEY
+After deployment open:
+`https://YOUR-RENDER-URL.onrender.com/debug/watchmode`
 
-Build: npm install
-Start: npm start
+Expected:
+`{"ok":true,"count":...,"sample":[...]}`
 
-Important:
-The Watchmode `/releases` endpoint is primarily based on US streaming releases. Exact India-specific OTT release tracking depends on Watchmode's enabled regions/plan. The paid `title-release-dates` endpoint supports regional streaming release rows.
+If `ok:false`, the response will show the API/account error without exposing the key.
 
-No download or streaming URLs are exposed by this addon.
+The catalog routes are:
+- `/catalog/movie/new_ott_movies.json`
+- `/catalog/series/new_ott_series.json`
+
+Watchmode's simple Releases endpoint is primarily US streaming releases. Its paid Title Release Dates endpoint supports region-specific streaming rows such as `regions=IN`. This v2 deliberately uses the simple endpoint first so we can verify the account and feed before requiring a paid regional endpoint.
+
+Metadata only; no streaming/download URLs.
